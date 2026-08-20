@@ -14,6 +14,7 @@ Item {
 
   required property var service
   required property color textColor
+  required property color backgroundColor
   required property color accentColor
   required property color dimColor
   required property color dimmerColor
@@ -44,13 +45,11 @@ Item {
     width: Math.min(parent.width - Style.space(48), Style.space(340))
     spacing: Style.space(10)
 
-    ActionIcon {
+    GmailIcon {
       anchors.horizontalCenter: parent.horizontalCenter
-      name: "gmail"
-      brand: true
       iconSize: Style.space(44)
-      strokeScale: 1.0
-      color: Qt.rgba(root.dimColor.r, root.dimColor.g, root.dimColor.b, 0.5)
+      color: root.dimColor
+      backgroundColor: root.backgroundColor
     }
 
     Item { width: 1; height: Style.space(4) }

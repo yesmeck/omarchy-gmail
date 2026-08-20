@@ -62,6 +62,7 @@ Item {
     visible: !root.summary && !(root.service && root.service.detailLoading)
     service: root.service
     textColor: root.textColor
+    backgroundColor: root.backgroundColor
     accentColor: root.accentColor
     dimColor: root.dimColor
     dimmerColor: root.dimmerColor

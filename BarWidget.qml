@@ -51,7 +51,6 @@ BarWidget {
     readonly property color glyphColor: connected
       ? root.foreground
       : Qt.darker(root.foreground, 1.55)
-    readonly property bool hasUnread: !!root.gmail && root.gmail.unreadTotal > 0
     readonly property bool hasNew: !!root.gmail && root.gmail.newMailPending
 
     iconComponent: Component {
@@ -60,6 +59,7 @@ BarWidget {
           anchors.centerIn: parent
           iconSize: Style.space(12)
           color: button.glyphColor
+          backgroundColor: Color.background
           // A closed envelope, always: at 12 px the lifted flap reads as an
           // open box rather than as mail. The dot carries the state instead —
           // and it means "something arrived since you last looked", not "you

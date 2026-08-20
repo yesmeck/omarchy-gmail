@@ -2,17 +2,14 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 
-// An envelope, drawn rather than rasterised from an SVG: the bar slot is about
-// 16px and Qt's SVG renderer smears strokes at that size.
-//
-// The flap direction carries the state. A closed envelope with the flap folded
-// down is the resting look; unread mail lifts the flap open, which reads at bar
-// size where a colour change alone does not.
+// The official Gmail mark. Keep state indicators as native QML overlays so
+// their colours continue to follow the active Omarchy theme.
 Item {
   id: root
 
   property real iconSize: Style.font.icon
   property color color: Color.foreground
+  property color backgroundColor: Color.background
   property color badgeColor: Color.urgent
   // A dot, not a count: the bar says "something arrived", the tooltip says
   // how much, and the window says what.
@@ -25,52 +22,21 @@ Item {
   implicitWidth: iconSize
   implicitHeight: iconSize
 
-  onColorChanged: envelope.requestPaint()
-  onOpenChanged: envelope.requestPaint()
-  onIconSizeChanged: envelope.requestPaint()
+  // Selfh.st names these assets by glyph colour. Pick the contrasting mark
+  // from the surface behind it, independently of connection-state dimming.
+  readonly property bool lightGlyph: (backgroundColor.r * 0.2126
+    + backgroundColor.g * 0.7152 + backgroundColor.b * 0.0722) < 0.5
 
-  Canvas {
-    id: envelope
+  Image {
     anchors.fill: parent
-    antialiasing: true
-
-    onPaint: {
-      var ctx = getContext("2d")
-      ctx.reset()
-      var w = width
-      var h = height
-      if (w <= 0 || h <= 0) return
-
-      // The body is inset vertically so a wide-but-short envelope keeps the
-      // 3:2 proportion a letter actually has.
-      var left = w * 0.06
-      var right = w * 0.94
-      var top = h * 0.20
-      var bottom = h * 0.80
-      var stroke = Math.max(1, w * 0.085)
-
-      ctx.strokeStyle = root.color
-      ctx.lineWidth = stroke
-      ctx.lineJoin = "round"
-      ctx.lineCap = "round"
-
-      ctx.beginPath()
-      ctx.rect(left, top, right - left, bottom - top)
-      ctx.stroke()
-
-      ctx.beginPath()
-      if (root.open) {
-        // Flap standing up: the two diagonals meet above the top edge.
-        ctx.moveTo(left, top)
-        ctx.lineTo((left + right) / 2, top - (bottom - top) * 0.42)
-        ctx.lineTo(right, top)
-      } else {
-        ctx.moveTo(left, top)
-        ctx.lineTo((left + right) / 2, top + (bottom - top) * 0.55)
-        ctx.lineTo(right, top)
-      }
-      ctx.stroke()
-    }
+    source: Qt.resolvedUrl(root.lightGlyph
+      ? "../assets/gmail-light.svg"
+      : "../assets/gmail-dark.svg")
+    sourceSize.width: root.iconSize
+    sourceSize.height: root.iconSize
+    fillMode: Image.PreserveAspectFit
+    smooth: true
+    mipmap: true
   }
 
   Rectangle {

@@ -222,12 +222,11 @@ Item {
           anchors.verticalCenter: parent.verticalCenter
           spacing: Style.space(8)
 
-          ActionIcon {
+          GmailIcon {
             anchors.verticalCenter: parent.verticalCenter
-            name: "gmail"
             iconSize: Style.font.iconLarge
             color: root.foreground
-            brand: true
+            backgroundColor: root.background
           }
 
           Text {
