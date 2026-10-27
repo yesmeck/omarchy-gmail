@@ -498,7 +498,11 @@ Item {
           panelFontFamily: root.fontFamily
           zoom: root.bodyZoom
           showBack: root.compact
+          hasPrevious: root.service ? root.service.hasPreviousMessage : false
+          hasNext: root.service ? root.service.hasNextMessage : false
           forcePlainText: root.plainTextForced
+          onPreviousRequested: root.moveCursor(-1)
+          onNextRequested: root.moveCursor(1)
           onTogglePlainTextRequested: root.plainTextForced = !root.plainTextForced
           onZoomRequested: function(step) { root.zoomBy(step) }
           onZoomResetRequested: root.bodyZoom = 1.0
@@ -717,6 +721,7 @@ Item {
               ({ key: "Esc", label: "close" })
             ]
             if (root.currentView === "reader") return [
+              ({ key: "← / →", label: "prev / next" }),
               ({ key: "u", label: "back" }),
               ({ key: "r", label: "reply" }),
               ({ key: "e", label: "archive" }),
@@ -820,6 +825,11 @@ Item {
       Shortcut { sequence: "/"; enabled: !focusScope.typing; onActivated: searchBar.focusField() }
       Shortcut { sequence: "j"; enabled: !focusScope.typing; onActivated: root.moveCursor(1) }
       Shortcut { sequence: "k"; enabled: !focusScope.typing; onActivated: root.moveCursor(-1) }
+      // Arrows are the obvious thing to reach for once a message is open, and
+      // the reader's own arrows advertise them. They are scoped to the reader
+      // because in the list they would compete with the row widgets.
+      Shortcut { sequence: "Left"; enabled: !focusScope.typing && root.currentView === "reader"; onActivated: root.moveCursor(-1) }
+      Shortcut { sequence: "Right"; enabled: !focusScope.typing && root.currentView === "reader"; onActivated: root.moveCursor(1) }
       Shortcut { sequence: "Return"; enabled: !focusScope.typing && root.currentView === "list"; onActivated: root.openMessage(root.cursorId) }
       Shortcut { sequence: "u"; enabled: !focusScope.typing; onActivated: root.backToList() }
       Shortcut { sequence: "e"; enabled: !focusScope.typing; onActivated: root.actOnCursor("archive") }

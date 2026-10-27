@@ -87,6 +87,11 @@ Item {
   property int listSerial: 0
 
   property string selectedId: ""
+  // Whether the list has a message either side of this one. The reader's arrows
+  // are how you walk the list without going back to it, and selectOffset clamps
+  // at both ends rather than stopping, so they need to know where the ends are.
+  readonly property bool hasPreviousMessage: Model.hasPrevious(messages, selectedId)
+  readonly property bool hasNextMessage: Model.hasNext(messages, selectedId)
   property var selectedMessage: null
   property var selectedBody: ({ text: "", source: "" })
   // Already sanitised by the time the reader sees it. Decoding uses Qt.atob

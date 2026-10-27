@@ -92,6 +92,28 @@ assert.strictEqual(model.indexById(null, "a"), -1)
 assert.strictEqual(model.unreadCount(list), 2)
 assert.strictEqual(model.unreadCount([]), 0)
 
+// The reader steps through the list with arrows. selectOffset clamps at both
+// ends instead of stopping, so the ends have to be named separately or the
+// arrows lie about being able to move.
+assert.strictEqual(model.hasPrevious(list, "a"), false, "the first message has nothing above it")
+assert.strictEqual(model.hasNext(list, "a"), true)
+assert.strictEqual(model.hasPrevious(list, "b"), true, "a middle message moves both ways")
+assert.strictEqual(model.hasNext(list, "b"), true)
+assert.strictEqual(model.hasPrevious(list, "c"), true)
+assert.strictEqual(model.hasNext(list, "c"), false, "the last message has nothing below it")
+// Nothing selected yet, or a row that has since left the list: neither arrow
+// may claim there is somewhere to go.
+assert.strictEqual(model.hasPrevious(list, ""), false)
+assert.strictEqual(model.hasNext(list, ""), false)
+assert.strictEqual(model.hasPrevious(list, "zzz"), false)
+assert.strictEqual(model.hasNext(list, "zzz"), false)
+assert.strictEqual(model.hasPrevious(null, "a"), false)
+assert.strictEqual(model.hasNext(null, "a"), false)
+assert.strictEqual(model.hasPrevious([{ id: "only" }], "only"), false)
+assert.strictEqual(model.hasNext([{ id: "only" }], "only"), false)
+assert.strictEqual(model.hasPrevious([], "a"), false)
+assert.strictEqual(model.hasNext([], "a"), false)
+
 // ---------------------------------------------------------------- the bar
 
 assert.strictEqual(model.badgeText(0), "")

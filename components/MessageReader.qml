@@ -26,11 +26,18 @@ Item {
   // width the list is on screen and clicking another row is the navigation;
   // in a single column the reader has replaced the list, so it needs one.
   property bool showBack: false
+  // Whether the list has a message either side of this one. The arrows are how
+  // the reader walks the list without going back to it, so they need to know
+  // where the ends are.
+  property bool hasPrevious: false
+  property bool hasNext: false
   // Set by the reader itself when a document is too heavy to lay out, and
   // cleared by the user asking for it anyway.
   property bool forceRichAnyway: false
 
   signal backRequested()
+  signal previousRequested()
+  signal nextRequested()
   signal togglePlainTextRequested()
   signal zoomRequested(real step)
   signal zoomResetRequested()
@@ -98,24 +105,52 @@ Item {
       onActivated: root.backRequested()
     }
 
-    IconButton {
-      id: starButton
+    // Paging through the list without leaving the message. The star sits at the
+    // end of the same row so the header keeps one action cluster instead of
+    // growing a second corner.
+    Row {
+      id: headerActions
       anchors.right: parent.right
       anchors.top: backBar.visible ? backBar.bottom : parent.top
       anchors.topMargin: backBar.visible ? Style.space(10) : 0
-      iconName: "star"
-      filled: !!root.summary && root.summary.starred
-      tooltipText: (root.summary && root.summary.starred ? "Unstar" : "Star") + " · s"
-      foreground: root.summary && root.summary.starred ? root.accentColor : root.dimColor
-      hoverColor: root.accentColor
-      fontFamily: root.panelFontFamily
-      onClicked: if (root.service && root.summary) root.service.toggleStar(root.summary.id)
+      spacing: Style.space(2)
+
+      IconButton {
+        id: previousButton
+        iconName: "chevronLeft"
+        tooltipText: "Previous message · ←"
+        enabled: root.hasPrevious
+        foreground: root.dimColor
+        fontFamily: root.panelFontFamily
+        onClicked: root.previousRequested()
+      }
+
+      IconButton {
+        id: nextButton
+        iconName: "chevronRight"
+        tooltipText: "Next message · →"
+        enabled: root.hasNext
+        foreground: root.dimColor
+        fontFamily: root.panelFontFamily
+        onClicked: root.nextRequested()
+      }
+
+      IconButton {
+        id: starButton
+        iconName: "star"
+        filled: !!root.summary && root.summary.starred
+        tooltipText: (root.summary && root.summary.starred ? "Unstar" : "Star") + " · s"
+        foreground: root.summary && root.summary.starred ? root.accentColor : root.dimColor
+        hoverColor: root.accentColor
+        fontFamily: root.panelFontFamily
+        onClicked: if (root.service && root.summary) root.service.toggleStar(root.summary.id)
+      }
     }
 
     Column {
       id: headerColumn
       anchors.left: parent.left
-      anchors.right: starButton.left
+      anchors.right: headerActions.left
       anchors.rightMargin: Style.space(8)
       anchors.top: backBar.visible ? backBar.bottom : parent.top
       anchors.topMargin: backBar.visible ? Style.space(14) : 0

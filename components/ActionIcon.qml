@@ -119,6 +119,12 @@ Canvas {
     } else if (root.name === "back") {
       move(9, 3); line(4, 8); line(9, 13)
       move(4, 8); line(14, 8)
+    } else if (root.name === "chevronLeft") {
+      // Just the wedge. "back" carries a tail because it means "leave this
+      // page"; an arrow that steps through messages must not look like it does.
+      move(9.5, 3.5); line(5, 8); line(9.5, 12.5)
+    } else if (root.name === "chevronRight") {
+      move(6.5, 3.5); line(11, 8); line(6.5, 12.5)
     } else if (root.name === "eye" || root.name === "eyeOff") {
       // Almond outline, then the pupil as its own subpath so the two do not
       // join, and a slash for the hidden state.

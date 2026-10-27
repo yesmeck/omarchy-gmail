@@ -307,6 +307,8 @@ Item {
   readonly property bool hasMore: !!current && current.hasMore
   readonly property string resultSummary: current ? current.resultSummary : ""
   readonly property string selectedId: current ? current.selectedId : ""
+  readonly property bool hasPreviousMessage: !!current && current.hasPreviousMessage
+  readonly property bool hasNextMessage: !!current && current.hasNextMessage
   readonly property var selectedMessage: current ? current.selectedMessage : null
   readonly property var selectedBody: current ? current.selectedBody : ({ text: "", source: "" })
   readonly property string selectedHtml: current ? current.selectedHtml : ""

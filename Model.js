@@ -163,6 +163,20 @@ function unreadCount(list) {
   return count
 }
 
+// Whether the reader has somewhere to step to. selectOffset clamps at both ends
+// instead of stopping, so the arrows need to know where the ends are in order to
+// look disabled there — pressing one at the top of the list must not read as
+// "the mail is gone".
+function hasPrevious(list, id) {
+  return indexById(list, id) > 0
+}
+
+function hasNext(list, id) {
+  var source = Array.isArray(list) ? list : []
+  var at = indexById(source, id)
+  return at >= 0 && at < source.length - 1
+}
+
 // The bar has room for a number, not for a number of digits. Past 99 the exact
 // value has stopped being information anyone acts on.
 function badgeText(count, cap) {
