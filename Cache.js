@@ -10,6 +10,11 @@
 // CacheStore.qml owns the file.
 
 var VERSION = 1
+// Bodies are stored already decoded, so a change to the decoder leaves every
+// cached body wrong and nothing about the file says so. This version is what
+// lets such a change invalidate them: an entry written by a different decoder
+// reads as a miss and is fetched again.
+var BODY_VERSION = 1
 var MAX_QUERIES = 12
 // Bodies are the one thing worth keeping deep: a message body never changes, so
 // a hit is always correct and always saves a round trip. They live one file per
@@ -312,6 +317,7 @@ function bodyFileName(id) {
 function serializeBody(body) {
   var source = isObject(body) ? body : {}
   return JSON.stringify({
+    version: BODY_VERSION,
     text: String(source.text || ""),
     source: String(source.source || ""),
     html: String(source.html || ""),
@@ -323,6 +329,9 @@ function serializeBody(body) {
 function parseBody(text) {
   var parsed = parseJson(String(text || "").trim(), null)
   if (!isObject(parsed)) return null
+  // Unversioned files were written before the decoder was pinned, so they may
+  // hold text decoded by any earlier version of it. Treat them as a miss.
+  if (Number(parsed.version) !== BODY_VERSION) return null
   return {
     text: String(parsed.text || ""),
     source: String(parsed.source || ""),

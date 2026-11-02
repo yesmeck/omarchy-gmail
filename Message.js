@@ -95,6 +95,58 @@ function bytesToLatin1(bytes) {
   return out
 }
 
+// Is this byte string valid UTF-8 that actually uses multi-byte sequences?
+//
+// This exists because senders mislabel their own mail. Deutsche Bank sends a
+// text/plain part with `charset="windows-1252"` whose bytes are plainly UTF-8
+// ("für" arrives as C3 BC, not FC). Honouring the label turns every umlaut into
+// "fÃ¼r". Browsers have sniffed their way around this for decades and so must
+// we.
+//
+// The test is deliberately two-sided: the bytes must parse as UTF-8 *and* carry
+// at least one multi-byte sequence. Genuine 8-bit text fails the first half
+// (a lone FC is a continuation byte with no lead), and ASCII-only text passes
+// both decoders identically, so neither is at risk.
+function looksLikeUtf8(bytes) {
+  var i = 0
+  var length = bytes.length
+  var multiByte = false
+  while (i < length) {
+    var byte1 = bytes[i]
+    if (byte1 < 0x80) { i += 1; continue }
+    var need = 0
+    var codePoint = 0
+    if (byte1 >= 0xc2 && byte1 <= 0xdf) {
+      need = 1
+      codePoint = byte1 & 0x1f
+    } else if (byte1 >= 0xe0 && byte1 <= 0xef) {
+      need = 2
+      codePoint = byte1 & 0x0f
+    } else if (byte1 >= 0xf0 && byte1 <= 0xf4) {
+      need = 3
+      codePoint = byte1 & 0x07
+    } else {
+      return false   // continuation byte without a lead, or C0/C1/F5-FF
+    }
+    if (i + need >= length) return false
+    for (var k = 1; k <= need; k++) {
+      var next = bytes[i + k]
+      if ((next & 0xc0) !== 0x80) return false
+      codePoint = (codePoint << 6) | (next & 0x3f)
+    }
+    // Reject what the decoder would otherwise accept: overlong forms, UTF-16
+    // surrogates (which cannot appear in UTF-8) and code points past U+10FFFF.
+    if (need === 1 && codePoint < 0x80) return false
+    if (need === 2 && codePoint < 0x800) return false
+    if (need === 3 && codePoint < 0x10000) return false
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) return false
+    if (codePoint > 0x10ffff) return false
+    multiByte = true
+    i += need + 1
+  }
+  return multiByte
+}
+
 // Qt.atob is native C++ and skips the per-character base64 loop entirely; it
 // hands back a string of raw bytes, which still needs UTF-8 decoding. The pure
 // JS path stays for the node tests, and as the fallback anywhere Qt is absent.
@@ -184,7 +236,14 @@ function decodeWordBytes(charset, bytes) {
   var name = String(charset || "").toLowerCase()
   if (name.indexOf("utf-8") === 0 || name.indexOf("utf8") === 0) return bytesToUtf8(bytes)
   if (name.indexOf("iso-8859") === 0 || name.indexOf("windows-125") === 0
-    || name.indexOf("us-ascii") === 0 || name === "") return bytesToLatin1(bytes)
+    || name.indexOf("us-ascii") === 0 || name === "") {
+    // A part labelled as a single-byte charset can still be UTF-8: the sender
+    // wrote the bytes one way and declared them another. The bytes are the
+    // truth here — see looksLikeUtf8. Without this, a mislabelled German
+    // message reads as "fÃ¼r" and a mislabelled Chinese one is unreadable.
+    if (looksLikeUtf8(bytes)) return bytesToUtf8(bytes)
+    return bytesToLatin1(bytes)
+  }
   // GB18030, Shift_JIS and friends need a table this plugin does not carry.
   // UTF-8 decoding degrades to Latin-1 per byte, which at least keeps the
   // ASCII parts of the header readable.

@@ -264,6 +264,17 @@ assert.strictEqual(reloaded.version, cache.VERSION)
   assert.strictEqual(cache.parseBody("not json"), null, "a truncated file reads as a miss")
   deepEqual(cache.parseBody(cache.serializeBody({})),
     { text: "", source: "", html: "", attachments: [], images: [] })
+
+  // Bodies are cached after decoding, so a file written by an older decoder
+  // holds text that is wrong in a way the file itself does not reveal. It has
+  // to read as a miss, or a charset fix would never reach an already-read
+  // message. Files from before the version existed have no field at all.
+  assert.strictEqual(cache.parseBody(JSON.stringify({ text: "fÃ¼r", source: "plain" })), null,
+    "an unversioned body is stale")
+  assert.strictEqual(cache.parseBody(JSON.stringify({ version: 99, text: "x", source: "plain" })), null,
+    "a body from another version is stale")
+  assert.strictEqual(cache.parseBody(cache.serializeBody({ text: "keep" })).text, "keep",
+    "the current version still round-trips")
 }
 
 console.log("test_cache.js ok")

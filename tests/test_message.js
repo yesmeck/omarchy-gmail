@@ -72,6 +72,50 @@ assert.strictEqual(
 
 // An unsupported charset must still yield readable ASCII rather than an error.
 assert.ok(message.decodeHeaderValue("=?GB2312?B?1eLK1w==?=").length > 0)
+
+// ------------------------------------------------- charset sniffing
+//
+// Senders mislabel their own bytes. Deutsche Bank ships a text/plain part
+// declared as windows-1252 whose bytes are UTF-8, so trusting the label turns
+// "für" into "fÃ¼r" (real message, 2026-11). The bytes decide, not the label —
+// but only when they are unambiguously UTF-8, or genuine 8-bit mail breaks.
+function bytesOf(text) { return Array.from(Buffer.from(text, "utf8")) }
+
+assert.strictEqual(message.decodeWordBytes("windows-1252", bytesOf("Grüße")), "Grüße",
+  "UTF-8 bytes declared as windows-1252 are still UTF-8")
+assert.strictEqual(message.decodeWordBytes("iso-8859-1", bytesOf("für")), "für")
+assert.strictEqual(message.decodeWordBytes("us-ascii", bytesOf("überprüfen")), "überprüfen")
+assert.strictEqual(message.decodeWordBytes("windows-1252", bytesOf("中文正文")), "中文正文",
+  "a mislabelled CJK body is otherwise unreadable")
+
+// Genuine single-byte text must stay single-byte. FC is ü in cp1252 and is not
+// a legal UTF-8 lead byte, so the sniff has to leave it alone.
+assert.strictEqual(message.decodeWordBytes("windows-1252", [0x66, 0xfc, 0x72]), "für")
+assert.strictEqual(message.decodeWordBytes("iso-8859-1", [0x4d, 0xfc, 0x6e, 0x63, 0x68, 0x65, 0x6e]), "München")
+
+// ASCII is identical either way, including when the label is a lie.
+assert.strictEqual(message.decodeWordBytes("windows-1252", bytesOf("Guten Tag")), "Guten Tag")
+assert.strictEqual(message.decodeWordBytes("", bytesOf("plain ascii")), "plain ascii")
+
+// Malformed UTF-8 must not be mistaken for it: a truncated sequence, an
+// overlong form, and a UTF-16 surrogate are all illegal encodings.
+assert.strictEqual(message.decodeWordBytes("windows-1252", [0x66, 0xc3]), "fÃ",
+  "a truncated sequence falls back to the declared charset")
+assert.strictEqual(message.decodeWordBytes("windows-1252", [0xc0, 0xaf]), "À¯",
+  "an overlong encoding is not UTF-8")
+assert.strictEqual(message.decodeWordBytes("windows-1252", [0xed, 0xa0, 0x80]), "\u00ed\u00a0\u0080",
+  "a surrogate half is not UTF-8")
+assert.strictEqual(message.decodeWordBytes("windows-1252", [0xf5, 0x80, 0x80, 0x80]), "\u00f5\u0080\u0080\u0080",
+  "a code point past U+10FFFF is not UTF-8")
+
+// The body path uses the same decoder, so the reported message decodes.
+const mislabelled = {
+  mimeType: "text/plain; charset=windows-1252",
+  headers: [{ name: "Content-Type", value: "text/plain; charset=windows-1252" }],
+  body: { data: b64url("Grüße von der Deutschen Bank") }
+}
+assert.strictEqual(message.extractBody({ parts: [mislabelled] }).text,
+  "Grüße von der Deutschen Bank")
 assert.strictEqual(message.decodeHeaderValue(""), "")
 assert.strictEqual(message.decodeHeaderValue(null), "")
 
